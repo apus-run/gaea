@@ -46,6 +46,14 @@ func defaultServer() *Server {
 	}
 }
 
+func ApplyServer(opts ...ServerOption) *Server {
+	srv := defaultServer()
+	for _, o := range opts {
+		o(srv)
+	}
+	return srv
+}
+
 // ServerOption is gRPC server option.
 type ServerOption func(o *Server)
 

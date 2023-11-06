@@ -21,8 +21,8 @@ const (
 	RemoteAddr           = "x-gateway-remote-addr"
 )
 
-// paralusGatewayAnnotator adds paralus gateway specific annotations
-var paralusGatewayAnnotator = func(ctx context.Context, r *http.Request) metadata.MD {
+// ParalusGatewayAnnotator adds paralus gateway specific annotations
+var ParalusGatewayAnnotator = func(ctx context.Context, r *http.Request) metadata.MD {
 	return metadata.New(map[string]string{
 		GatewayRequest: "true",
 		GatewayURL:     r.URL.EscapedPath(),

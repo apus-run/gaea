@@ -10,6 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/apus-run/gaea/registry"
+	"github.com/apus-run/gaea/server"
 )
 
 type AppInfo interface {
@@ -38,6 +39,10 @@ func New(opts ...Option) *Gaea {
 		cancel: cancel,
 		opts:   o,
 	}
+}
+
+func (g *Gaea) RegisterServer(servers ...server.Server) {
+	g.opts.servers = append(g.opts.servers, servers...)
 }
 
 // ID returns app instance id.
@@ -82,7 +87,8 @@ func (g *Gaea) Run() error {
 	for _, srv := range g.opts.servers {
 		srv := srv
 		eg.Go(func() error {
-			<-ctx.Done() // wait for stop signal
+			// wait for stop signal
+			<-ctx.Done()
 			stopCtx, cancel := context.WithTimeout(NewContext(g.opts.ctx, g), g.opts.stopTimeout)
 			defer cancel()
 			return srv.Stop(stopCtx)
@@ -110,17 +116,25 @@ func (g *Gaea) Run() error {
 		}
 	}
 
-	// watch signal
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, g.opts.sigs...)
-	eg.Go(func() error {
-		select {
-		case <-ctx.Done():
+	if len(g.opts.sigs) == 0 {
+		eg.Go(func() error {
+			<-ctx.Done()
 			return ctx.Err()
-		case <-quit:
-			return g.Stop()
-		}
-	})
+		})
+	} else {
+		// watch signal
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, g.opts.sigs...)
+		eg.Go(func() error {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-quit:
+				return g.Stop()
+			}
+		})
+	}
+
 	if err := eg.Wait(); err != nil && !errors.Is(err, context.Canceled) {
 		return err
 	}
@@ -128,38 +142,38 @@ func (g *Gaea) Run() error {
 }
 
 // Stop gracefully stops the application.
-func (a *Gaea) Stop() (err error) {
-	ctx := NewContext(a.ctx, a)
-	for _, fn := range a.opts.beforeStop {
+func (g *Gaea) Stop() (err error) {
+	ctx := NewContext(g.ctx, g)
+	for _, fn := range g.opts.beforeStop {
 		err = fn(ctx)
 	}
 
 	// deregister instance
-	a.mu.Lock()
-	instance := a.instance
-	a.mu.Unlock()
-	if a.opts.registry != nil && instance != nil {
-		ctx, cancel := context.WithTimeout(NewContext(a.ctx, a), a.opts.registryTimeout)
+	g.mu.Lock()
+	instance := g.instance
+	g.mu.Unlock()
+	if g.opts.registry != nil && instance != nil {
+		ctx, cancel := context.WithTimeout(NewContext(g.ctx, g), g.opts.registryTimeout)
 		defer cancel()
-		if err := a.opts.registry.Deregister(ctx, instance); err != nil {
+		if err := g.opts.registry.Deregister(ctx, instance); err != nil {
 			return err
 		}
 	}
 
 	// cancel app
-	if a.cancel != nil {
-		a.cancel()
+	if g.cancel != nil {
+		g.cancel()
 	}
 	return err
 }
 
-func (a *Gaea) buildInstance() (*registry.ServiceInstance, error) {
-	endpoints := make([]string, 0, len(a.opts.endpoints))
-	for _, e := range a.opts.endpoints {
+func (g *Gaea) buildInstance() (*registry.ServiceInstance, error) {
+	endpoints := make([]string, 0, len(g.opts.endpoints))
+	for _, e := range g.opts.endpoints {
 		endpoints = append(endpoints, e.String())
 	}
 	if len(endpoints) == 0 {
-		for _, srv := range a.opts.servers {
+		for _, srv := range g.opts.servers {
 			url, err := srv.Endpoint()
 			if err == nil {
 				endpoints = append(endpoints, url.String())
@@ -167,10 +181,10 @@ func (a *Gaea) buildInstance() (*registry.ServiceInstance, error) {
 		}
 	}
 	return &registry.ServiceInstance{
-		ID:        a.opts.id,
-		Name:      a.opts.name,
-		Version:   a.opts.version,
-		Metadata:  a.opts.metadata,
+		ID:        g.opts.id,
+		Name:      g.opts.name,
+		Version:   g.opts.version,
+		Metadata:  g.opts.metadata,
 		Endpoints: endpoints,
 	}, nil
 }

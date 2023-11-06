@@ -116,7 +116,7 @@ func WithRegistry(r registry.Registry) Option {
 	}
 }
 
-// WithServer with a server , http or grpc
+// WithServer with servers
 func WithServer(srv ...server.Server) Option {
 	return func(o *options) {
 		o.servers = srv

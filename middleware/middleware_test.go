@@ -16,7 +16,7 @@ func TestChain(t *testing.T) {
 		return "reply", nil
 	}
 
-	got, err := Chain(test1Middleware, test2Middleware, test3Middleware)(next)(context.Background(), "hello gaia!")
+	got, err := Chain(test1Middleware, test2Middleware, test3Middleware)(next)(context.Background(), "hello gaea!")
 	if err != nil {
 		t.Errorf("expect %v, got %v", nil, err)
 	}

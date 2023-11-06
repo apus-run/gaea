@@ -2,13 +2,13 @@ package grpc
 
 import (
 	"context"
-	"log"
 	"net"
 	"net/url"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/admin"
 	"google.golang.org/grpc/credentials"
+	log "google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
@@ -18,17 +18,12 @@ import (
 	"github.com/apus-run/gaea/server"
 )
 
-var (
-	_ server.Server = (*Server)(nil)
-)
+var _ server.Server = (*Server)(nil)
 
 // NewServer creates a gRPC server by options.
 func NewServer(opts ...ServerOption) *Server {
-	srv := defaultServer()
+	srv := ApplyServer(opts...)
 
-	for _, o := range opts {
-		o(srv)
-	}
 	unaryInterceptor := []grpc.UnaryServerInterceptor{
 		srv.unaryServerInterceptor(),
 	}
@@ -93,7 +88,7 @@ func (s *Server) Start(ctx context.Context) error {
 		return s.err
 	}
 	s.ctx = ctx
-	log.Printf("[gRPC] server listening on: %s", s.lis.Addr().String())
+	log.Infof("[gRPC] server listening on: %s", s.lis.Addr().String())
 	s.health.Resume()
 	return s.Serve(s.lis)
 }
@@ -105,7 +100,7 @@ func (s *Server) Stop(ctx context.Context) error {
 	}
 	s.health.Shutdown()
 	s.GracefulStop()
-	log.Print("[gRPC] server stopping")
+	log.Infof("[gRPC] server stopping")
 	return nil
 }
 

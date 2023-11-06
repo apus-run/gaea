@@ -18,6 +18,7 @@ service Greeter {
   rpc SayHelloPost (HelloRequest) returns (HelloReply)  {
     option (google.api.http) = {
       post: "/hello",
+      body: "*"
     };
   }
   // Sends a greeting

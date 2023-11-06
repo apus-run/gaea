@@ -15,15 +15,6 @@ type Server interface {
 	Endpoint() (*url.URL, error)
 }
 
-// Header is the storage medium used by a Header.
-type Header interface {
-	Get(key string) string
-	Set(key string, value string)
-	Add(key string, value string)
-	Keys() []string
-	Values(key string) []string
-}
-
 type (
 	grpcServerKey struct{}
 	grpcClientKey struct{}

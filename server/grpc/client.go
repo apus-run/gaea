@@ -39,6 +39,14 @@ func defaultClient() *Client {
 	}
 }
 
+func ApplyClient(opts ...ClientOption) *Client {
+	c := defaultClient()
+	for _, o := range opts {
+		o(c)
+	}
+	return c
+}
+
 // ClientOption is gRPC client option.
 type ClientOption func(o *Client)
 
@@ -122,47 +130,42 @@ func DialInsecure(ctx context.Context, opts ...ClientOption) (*grpc.ClientConn, 
 }
 
 func dial(ctx context.Context, insecure bool, opts ...ClientOption) (*grpc.ClientConn, error) {
-	options := defaultClient()
-
-	for _, o := range opts {
-		o(options)
-	}
-
+	client := ApplyClient(opts...)
 	ints := []grpc.UnaryClientInterceptor{
-		options.unaryClientInterceptor(options.ms, options.timeout),
+		client.unaryClientInterceptor(client.ms, client.timeout),
 	}
 	sints := []grpc.StreamClientInterceptor{
-		options.streamClientInterceptor(),
+		client.streamClientInterceptor(),
 	}
-	if len(options.ints) > 0 {
-		ints = append(ints, options.ints...)
+	if len(client.ints) > 0 {
+		ints = append(ints, client.ints...)
 	}
-	if len(options.streamInts) > 0 {
-		sints = append(sints, options.streamInts...)
+	if len(client.streamInts) > 0 {
+		sints = append(sints, client.streamInts...)
 	}
 	grpcOpts := []grpc.DialOption{
-		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}],"healthCheckConfig":{"serviceName":""}}`, options.balancerName)),
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}],"healthCheckConfig":{"serviceName":""}}`, client.balancerName)),
 		grpc.WithChainUnaryInterceptor(ints...),
 		grpc.WithChainStreamInterceptor(sints...),
 	}
-	if options.discovery != nil {
+	if client.discovery != nil {
 		grpcOpts = append(grpcOpts,
 			grpc.WithResolvers(
 				discovery.NewBuilder(
-					options.discovery,
+					client.discovery,
 					discovery.WithInsecure(insecure),
-					discovery.PrintDebugLog(options.printDiscoveryDebugLog),
+					discovery.PrintDebugLog(client.printDiscoveryDebugLog),
 				)))
 	}
 	if insecure {
 		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(grpcInsecure.NewCredentials()))
 	}
-	if options.tlsConf != nil {
-		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(credentials.NewTLS(options.tlsConf)))
+	if client.tlsConf != nil {
+		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(credentials.NewTLS(client.tlsConf)))
 	}
-	if len(options.grpcOpts) > 0 {
-		grpcOpts = append(grpcOpts, options.grpcOpts...)
+	if len(client.grpcOpts) > 0 {
+		grpcOpts = append(grpcOpts, client.grpcOpts...)
 	}
 
-	return grpc.DialContext(ctx, options.endpoint, grpcOpts...)
+	return grpc.DialContext(ctx, client.endpoint, grpcOpts...)
 }

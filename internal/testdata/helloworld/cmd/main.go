@@ -1,4 +1,4 @@
-package helloworld
+package main
 
 import (
 	"context"
@@ -9,18 +9,20 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	helloworldpb "github.com/apus-run/gaea/internal/testdata/helloworld"
 )
 
 type server struct {
-	UnimplementedGreeterServer
+	helloworldpb.UnimplementedGreeterServer
 }
 
 func NewServer() *server {
 	return &server{}
 }
 
-func (s *server) SayHello(ctx context.Context, in *HelloRequest) (*HelloReply, error) {
-	return &HelloReply{Message: in.Name + " world"}, nil
+func (s *server) SayHello(ctx context.Context, in *helloworldpb.HelloRequest) (*helloworldpb.HelloReply, error) {
+	return &helloworldpb.HelloReply{Message: in.Name + " world"}, nil
 }
 
 func main() {
@@ -33,7 +35,7 @@ func main() {
 	// Create a gRPC server object
 	s := grpc.NewServer()
 	// Attach the Greeter service to the server
-	RegisterGreeterServer(s, &server{})
+	helloworldpb.RegisterGreeterServer(s, &server{})
 	// Serve gRPC server
 	log.Println("Serving gRPC on 0.0.0.0:8080")
 	go func() {
@@ -54,7 +56,7 @@ func main() {
 
 	gwmux := runtime.NewServeMux()
 	// Register Greeter
-	err = RegisterGreeterHandler(context.Background(), gwmux, conn)
+	err = helloworldpb.RegisterGreeterHandler(context.Background(), gwmux, conn)
 	if err != nil {
 		log.Fatalln("Failed to register gateway:", err)
 	}

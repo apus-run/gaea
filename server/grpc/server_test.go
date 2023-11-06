@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"fmt"
-
 	"net/url"
 	"reflect"
 	"strings"
@@ -118,13 +117,13 @@ func testClient(t *testing.T, srv *Server) {
 		t.Fatal(err)
 	}
 	client := pb.NewGreeterClient(conn)
-	reply, err := client.SayHello(context.Background(), &pb.HelloRequest{Name: "gaia"})
+	reply, err := client.SayHello(context.Background(), &pb.HelloRequest{Name: "gaea"})
 	t.Log(err)
 	if err != nil {
 		t.Errorf("failed to call: %v", err)
 	}
-	if !reflect.DeepEqual(reply.Message, "Hello gaia") {
-		t.Errorf("expect %s, got %s", "Hello gaia", reply.Message)
+	if !reflect.DeepEqual(reply.Message, "Hello gaea") {
+		t.Errorf("expect %s, got %s", "Hello gaea", reply.Message)
 	}
 
 	streamCli, err := client.SayHelloStream(context.Background())
