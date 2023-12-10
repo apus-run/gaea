@@ -55,9 +55,9 @@ func TestDial(t *testing.T) {
 	v := []grpc.DialOption{
 		grpc.EmptyDialOption{},
 	}
-	WithGrpcOptions(v...)(o)
-	if !reflect.DeepEqual(v, o.grpcOpts) {
-		t.Errorf("expect %v but got %v", v, o.grpcOpts)
+	WithDialOptions(v...)(o)
+	if !reflect.DeepEqual(v, o.dialOpts) {
+		t.Errorf("expect %v but got %v", v, o.dialOpts)
 	}
 }
 

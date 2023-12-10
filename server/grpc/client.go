@@ -25,7 +25,7 @@ type Client struct {
 	ms                     []middleware.Middleware
 	ints                   []grpc.UnaryClientInterceptor
 	streamInts             []grpc.StreamClientInterceptor
-	grpcOpts               []grpc.DialOption
+	dialOpts               []grpc.DialOption
 	balancerName           string
 	printDiscoveryDebugLog bool
 }
@@ -57,10 +57,10 @@ func WithEndpoint(endpoint string) ClientOption {
 	}
 }
 
-// WithGrpcOptions with gRPC options.
-func WithGrpcOptions(opts ...grpc.DialOption) ClientOption {
+// WithDialOptions with gRPC client connection options.
+func WithDialOptions(opts ...grpc.DialOption) ClientOption {
 	return func(c *Client) {
-		c.grpcOpts = opts
+		c.dialOpts = opts
 	}
 }
 
@@ -143,13 +143,13 @@ func dial(ctx context.Context, insecure bool, opts ...ClientOption) (*grpc.Clien
 	if len(client.streamInts) > 0 {
 		sints = append(sints, client.streamInts...)
 	}
-	grpcOpts := []grpc.DialOption{
+	dialOpts := []grpc.DialOption{
 		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}],"healthCheckConfig":{"serviceName":""}}`, client.balancerName)),
 		grpc.WithChainUnaryInterceptor(ints...),
 		grpc.WithChainStreamInterceptor(sints...),
 	}
 	if client.discovery != nil {
-		grpcOpts = append(grpcOpts,
+		dialOpts = append(dialOpts,
 			grpc.WithResolvers(
 				discovery.NewBuilder(
 					client.discovery,
@@ -158,14 +158,14 @@ func dial(ctx context.Context, insecure bool, opts ...ClientOption) (*grpc.Clien
 				)))
 	}
 	if insecure {
-		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(grpcInsecure.NewCredentials()))
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(grpcInsecure.NewCredentials()))
 	}
 	if client.tlsConf != nil {
-		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(credentials.NewTLS(client.tlsConf)))
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(client.tlsConf)))
 	}
-	if len(client.grpcOpts) > 0 {
-		grpcOpts = append(grpcOpts, client.grpcOpts...)
+	if len(client.dialOpts) > 0 {
+		dialOpts = append(dialOpts, client.dialOpts...)
 	}
 
-	return grpc.DialContext(ctx, client.endpoint, grpcOpts...)
+	return grpc.DialContext(ctx, client.endpoint, dialOpts...)
 }

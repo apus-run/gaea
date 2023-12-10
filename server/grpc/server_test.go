@@ -99,7 +99,7 @@ func testClient(t *testing.T, srv *Server) {
 	}
 	// new a gRPC client
 	conn, err := DialInsecure(context.Background(), WithEndpoint(u.Host),
-		WithGrpcOptions(grpc.WithBlock()),
+		WithDialOptions(grpc.WithBlock()),
 		WithUnaryInterceptor(
 			func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 				return invoker(ctx, method, req, reply, cc, opts...)

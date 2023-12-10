@@ -57,16 +57,15 @@ func runServer(stop <-chan struct{}) {
 		//	helloworldpb.RegisterGreeterHandlerFromEndpoint,
 		//)
 
+		ctx := context.Background()
 		endpoint := ":9998"
 		conn, err := serverGrpc.DialInsecure(
-			context.Background(),
+			ctx,
 			serverGrpc.WithEndpoint(endpoint),
 			serverGrpc.WithMiddleware(
 				recovery.Recovery(),
 			),
 		)
-
-		defer conn.Close()
 
 		if err != nil {
 			log.Fatalf("did not connect: %v", err)

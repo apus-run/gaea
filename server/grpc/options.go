@@ -71,7 +71,7 @@ func Address(addr string) ServerOption {
 	}
 }
 
-// Endpoint with server address.
+// Endpoint with server endpoint.
 func Endpoint(endpoint *url.URL) ServerOption {
 	return func(s *Server) {
 		s.endpoint = endpoint
